@@ -1,7 +1,3 @@
-// TestCoreGuidelines.cpp : Defines the entry point for the console application.
-//
-
-
 #include "stdafx.h"
 
 
@@ -9,52 +5,40 @@ using namespace std;
 
 #define USING_GSL
 
-#ifndef USING_GSL
-// 2) WITHOUT USING GSL
-int readPositionN(int* p, int n)
+#ifdef USING_GSL
+#include <gsl/gsl>
+int readPositionN(gsl::span<int> p, int n)
 {
-    cout << "without GSL" << endl;
+    std::cout << "with GSL" << endl;
     return p[n];
 }
 #else
-#include <gsl.h>
-// 3) WITH GSL
-int readPositionN(gsl::span<int> p, int n)
+int readPositionN(int* p, int n)
 {
-    cout << "with GSL" << endl;
-    return p[n];
+    std::cout << "without GSL" << endl;
+    return p[n]; // Bad: Pointer Aritmetic
 }
 #endif
 
 int main()
 {
-    //// 1) CORE GUIDLEINES PLUGIN
-
-	int arr[10];		// BAD, warning 26494 will be fired	
-	int* p = arr;          // BAD, warning 26485 will be fired
-	//arr[0] = 6;
-
-	cout << "CPP CORE GUIDELINES " << endl;
-	cout << " arr[10] " << arr[0]<<endl; // Normal Warning
-
-#ifndef USING_GSL
-    // 2) WITHOUT USING GSL
     const unsigned int SIZE = 100;
-    int a[SIZE];
+#ifdef USING_GSL
+    int a[SIZE] = { 0 };
+    std::cout << "First Position is " <<a[0]<< endl;
     for (auto i = 0U; i < SIZE; ++i)
-        a[i] = i;
-    int res = readPositionN(a, 50);    // bad
-    cout << "Return value " << res << endl;
-#else
-    // 3) USING GSL
-    const unsigned int SIZE = 100;
-    int a[SIZE];
+       gsl::at(a, i) = i;
+    int res = readPositionN(a, 50);
+    
+#else    
+    int a[SIZE]; // Bad: Variable Unitialized
+    std::cout << "First Position is " << a[0] << endl; // Warning: Using unitialized Memory
     for (auto i = 0U; i < SIZE; ++i)
-        a[i] = i;
-    int res = readPositionN(a, 50);  
-    cout << "Return value " << res << endl;
+        a[i] = i; // Bad: Only index into array using constant
+    int res = readPositionN(a, 50);    // Bad: Array to pointer decay.    
 #endif
 
+    std::cout << "Return value " << res << endl;
     return 0;
 }
 
